@@ -20,8 +20,8 @@ import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.util.LruCache;
 
-import com.emuneee.marshmallowfm.utils.BitmapHelper;
-import com.emuneee.marshmallowfm.utils.LogHelper;
+import com.allthatseries.RNAudioPlayer.utils.BitmapHelper;
+import com.allthatseries.RNAudioPlayer.utils.LogHelper;
 
 import java.io.IOException;
 

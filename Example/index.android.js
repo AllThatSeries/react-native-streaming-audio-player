@@ -9,23 +9,46 @@ import {
   AppRegistry,
   StyleSheet,
   Text,
-  View
+  View,
+  Button,
 } from 'react-native';
+import Player from 'react-native-streaming-audio-player';
 
 export default class Example extends Component {
+
+  onPlay() {
+    Player.play();
+  }
+
+  onPause() {
+    Player.pause();
+  }
+
   render() {
     return (
       <View style={styles.container}>
-        <Text style={styles.welcome}>
-          Welcome to React Native!
-        </Text>
-        <Text style={styles.instructions}>
-          To get started, edit index.android.js
-        </Text>
-        <Text style={styles.instructions}>
-          Double tap R on your keyboard to reload,{'\n'}
-          Shake or press menu button for dev menu
-        </Text>
+        <View style={{flexDirection:'row', alignSelf:'stretch', justifyContent:'space-around'}}>
+          <Button 
+            title='<<'
+            onPress={() => this.onPlay()}
+            color='red'
+          />
+          <Button 
+            title='Play'
+            onPress={() => this.onPlay()}
+            color='red'
+          />
+          <Button 
+            title='Pause'
+            onPress={() => this.onPause()}
+            color='red'
+          />
+          <Button 
+            title='>>'
+            onPress={() => this.onPlay()}
+            color='red'
+          />          
+        </View>
       </View>
     );
   }

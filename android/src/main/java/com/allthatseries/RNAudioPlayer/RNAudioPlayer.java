@@ -18,7 +18,7 @@ public class RNAudioPlayer implements ReactPackage {
                               ReactApplicationContext reactContext) {
     List<NativeModule> modules = new ArrayList<>();
 
-    modules.add(new RNDeviceModule(reactContext));
+    modules.add(new RNAudioPlayerModule(reactContext));
 
     return modules;
   }
@@ -33,5 +33,4 @@ public class RNAudioPlayer implements ReactPackage {
                             ReactApplicationContext reactContext) {
   	return Collections.emptyList();
   }
-
 }

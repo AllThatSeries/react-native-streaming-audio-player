@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.allthatseries.RNAudioPlayer.utils
+package com.allthatseries.RNAudioPlayer.utils;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;

@@ -1,8 +1,11 @@
 package com.example;
 
 import android.app.Application;
+import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
 
+import com.allthatseries.RNAudioPlayer.AudioPlayerService;
 import com.facebook.react.ReactApplication;
 import com.allthatseries.RNAudioPlayer.RNAudioPlayer;
 import com.facebook.react.ReactInstanceManager;
