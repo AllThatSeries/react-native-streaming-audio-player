@@ -8,7 +8,8 @@
 	},
 	"dependencies": {
 		"react": "15.4.2",
-		"react-native": "0.41.2"
+		"react-native": "0.41.2",
+		"react-native-streaming-audio-player": "file:../"
 	},
 	"devDependencies": {
 		"babel-jest": "19.0.0",
