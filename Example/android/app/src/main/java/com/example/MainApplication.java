@@ -6,8 +6,9 @@ import android.content.Intent;
 import android.util.Log;
 
 import com.allthatseries.RNAudioPlayer.AudioPlayerService;
+import com.allthatseries.RNAudioPlayer.RNAudioPlayerPackage;
 import com.facebook.react.ReactApplication;
-import com.allthatseries.RNAudioPlayer.RNAudioPlayer;
+import com.allthatseries.RNAudioPlayer.RNAudioPlayerPackage;
 import com.facebook.react.ReactInstanceManager;
 import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
@@ -29,7 +30,7 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
-          new RNAudioPlayer()
+          new RNAudioPlayerPackage()
       );
     }
   };

@@ -11,11 +11,10 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.uimanager.ViewManager;
 import com.facebook.react.bridge.JavaScriptModule;
 
-public class RNAudioPlayer implements ReactPackage {
+public class RNAudioPlayerPackage implements ReactPackage {
 
   @Override
-  public List<NativeModule> createNativeModules(
-                              ReactApplicationContext reactContext) {
+  public List<NativeModule> createNativeModules(ReactApplicationContext reactContext) {
     List<NativeModule> modules = new ArrayList<>();
 
     modules.add(new RNAudioPlayerModule(reactContext));

@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.support.annotation.Nullable;
@@ -17,6 +18,7 @@ import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
@@ -30,8 +32,8 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
 
     public RNAudioPlayerModule(ReactApplicationContext reactContext) {
         super(reactContext);
-        this.reactContext = reactContext;
 
+        this.reactContext = reactContext;
         this.reactContext.addLifecycleEventListener(this);
     }
 
@@ -132,9 +134,12 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
     }
 
     @ReactMethod
-    public void play() {
-        Uri uri = Uri.parse("https://api.soundcloud.com/tracks/284081601/stream?client_id=a6fc7f2f8f0cded1aba16e1d98cdefb2");
-        mMediaController.getTransportControls().playFromUri(uri, null);
+    public void play(String stream_url, ReadableMap metadata) {
+        Bundle bundle = new Bundle();
+        bundle.putString(MediaMetadataCompat.METADATA_KEY_TITLE, metadata.getString("title"));
+        bundle.putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, metadata.getString("album_url"));
+        bundle.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, metadata.getString("artist_name"));
+        mMediaController.getTransportControls().playFromUri(Uri.parse(stream_url), bundle);
     }
 
     @ReactMethod
@@ -144,17 +149,17 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
 
     @ReactMethod
     public void resume() {
-
+        mMediaController.getTransportControls().play();
     }
 
     @ReactMethod
     public void stop() {
-
+        mMediaController.getTransportControls().stop();
     }
 
     @ReactMethod
     public void seekTo(int timeMillis) {
-
+        mMediaController.getTransportControls().seekTo(timeMillis);
     }
 
 

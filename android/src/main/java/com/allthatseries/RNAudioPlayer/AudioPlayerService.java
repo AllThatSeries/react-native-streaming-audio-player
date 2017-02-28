@@ -35,9 +35,11 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnPrepare
     private MediaSessionCompat mMediaSession;
     private MediaPlayer mMediaPlayer;
     private AudioManager mAudioManager;
-    private PlaybackStateCompat mPlaybackState;
     private MediaControllerCompat mMediaController;
     private NotificationManagerCompat mNotificationManager;
+    private PlaybackStateCompat mPlaybackState;
+
+    private MediaNotificationManager mMediaNotificationManager;
 
     public class ServiceBinder extends Binder {
 
@@ -64,10 +66,8 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnPrepare
                                 .build();
                         mMediaSession.setPlaybackState(mPlaybackState);
                         mMediaSession.setMetadata(new MediaMetadataCompat.Builder()
-                                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "ESPN: PTI")
-                                .putString(MediaMetadataCompat.METADATA_KEY_AUTHOR, "ESPN: PTI")
-                                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, "ESPN")
-                                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "Cubs The Favorites?: 10/14/15")
+                                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, extras.getString(MediaMetadataCompat.METADATA_KEY_TITLE))
+                                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, extras.getString(MediaMetadataCompat.METADATA_KEY_ARTIST))
                                 .build());
                         mMediaPlayer.prepareAsync();
                         break;
@@ -104,7 +104,7 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnPrepare
                             .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1.0f)
                             .build();
                     mMediaSession.setPlaybackState(mPlaybackState);
-                    updateNotification();
+//                    updateNotification();
                     break;
 
             }
@@ -119,27 +119,7 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnPrepare
                             .setState(PlaybackStateCompat.STATE_PAUSED, 0, 1.0f)
                             .build();
                     mMediaSession.setPlaybackState(mPlaybackState);
-                    updateNotification();
-                    break;
-
-            }
-        }
-
-        @Override
-        public void onRewind() {
-            switch (mPlaybackState.getState()) {
-                case PlaybackStateCompat.STATE_PLAYING:
-                    mMediaPlayer.seekTo(mMediaPlayer.getCurrentPosition() - 10000);
-                    break;
-
-            }
-        }
-
-        @Override
-        public void onFastForward() {
-            switch (mPlaybackState.getState()) {
-                case PlaybackStateCompat.STATE_PLAYING:
-                    mMediaPlayer.seekTo(mMediaPlayer.getCurrentPosition() + 10000);
+//                    updateNotification();
                     break;
 
             }
@@ -156,7 +136,12 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnPrepare
     @Override
     public void onPrepared(MediaPlayer mp) {
         mMediaPlayer.start();
-        updateNotification();
+        mPlaybackState = new PlaybackStateCompat.Builder()
+                .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1.0f)
+                .build();
+        mMediaSession.setPlaybackState(mPlaybackState);
+        mMediaNotificationManager.startNotification();
+//        updateNotification();
     }
 
     @Override
@@ -208,6 +193,12 @@ public class AudioPlayerService extends Service implements MediaPlayer.OnPrepare
         // 4) create the media controller
         try {
             mMediaController = new MediaControllerCompat(this, mMediaSession.getSessionToken());
+        } catch(RemoteException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            mMediaNotificationManager = new MediaNotificationManager(this);
         } catch(RemoteException e) {
             e.printStackTrace();
         }

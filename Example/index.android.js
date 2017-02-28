@@ -17,7 +17,12 @@ import Player from 'react-native-streaming-audio-player';
 export default class Example extends Component {
 
   onPlay() {
-    Player.play();
+    const uri = "https://api.soundcloud.com/tracks/284081601/stream?client_id=a6fc7f2f8f0cded1aba16e1d98cdefb2"
+    Player.play(uri, {
+      title: "Complex",
+      album_url: "https://i1.sndcdn.com/artworks-000184313208-xt911o-large.jpg",
+      artist_name: "Zion.T"
+    });
   }
 
   onPause() {
