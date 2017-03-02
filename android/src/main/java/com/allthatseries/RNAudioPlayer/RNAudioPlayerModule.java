@@ -14,6 +14,8 @@ import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -29,6 +31,7 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
     ReactApplicationContext reactContext;
 
     private MediaControllerCompat mMediaController;
+    private AudioPlayerService mService;
 
     public RNAudioPlayerModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -71,22 +74,9 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
     private MediaControllerCompat.Callback mMediaControllerCallback = new MediaControllerCompat.Callback() {
         @Override
         public void onPlaybackStateChanged(PlaybackStateCompat state) {
-
-//            switch (state.getState()) {
-//                case PlaybackState.STATE_NONE:
-//                    mPlayButton.setImageResource(R.mipmap.ic_play);
-//                    break;
-//                case PlaybackState.STATE_PLAYING:
-//                    mPlayButton.setImageResource(R.mipmap.ic_pause);
-//                    break;
-//                case PlaybackState.STATE_PAUSED:
-//                    mPlayButton.setImageResource(R.mipmap.ic_play);
-//                    break;
-//                case PlaybackState.STATE_FAST_FORWARDING:
-//                    break;
-//                case PlaybackState.STATE_REWINDING:
-//                    break;
-//            }
+            WritableMap params = Arguments.createMap();
+            params.putInt("playbackState", state.getState());
+            sendEvent("onPlaybackStateChanged", params);
         }
 
         @Override
@@ -97,9 +87,9 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
 
     @Override
     public void onServiceConnected(ComponentName name, IBinder service) {
-
         if (service instanceof AudioPlayerService.ServiceBinder) {
             try {
+                mService = ((AudioPlayerService.ServiceBinder) service).getService();
                 mMediaController = new MediaControllerCompat(this.reactContext,
                         ((AudioPlayerService.ServiceBinder) service).getService().getMediaSessionToken());
                 mMediaController.registerCallback(mMediaControllerCallback);
@@ -162,5 +152,18 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
         mMediaController.getTransportControls().seekTo(timeMillis);
     }
 
+    @ReactMethod
+    public void isPlaying(Callback cb) {
+        cb.invoke(mService.getPlayback().isPlaying());
+    }
 
+    @ReactMethod
+    public void getDuration(Callback cb) {
+        cb.invoke(mService.getPlayback().getDuration());
+    }
+
+    @ReactMethod
+    public void getCurrentStreamPosition(Callback cb) {
+        cb.invoke(mService.getPlayback().getCurrentStreamPosition());
+    }
 }
