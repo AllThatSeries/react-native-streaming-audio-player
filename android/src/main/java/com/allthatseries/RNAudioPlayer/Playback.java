@@ -27,6 +27,7 @@ import android.os.Bundle;
 import android.os.PowerManager;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
+import android.telecom.Call;
 import android.util.Log;
 
 import java.io.IOException;
@@ -96,19 +97,6 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
         this.mState = PlaybackStateCompat.STATE_NONE;
     }
 
-    public void stop(boolean notifyListeners) {
-        mState = PlaybackStateCompat.STATE_STOPPED;
-        if (notifyListeners && mCallback != null) {
-            mCallback.onPlaybackStateChanged(mState);
-        }
-        mCurrentPosition = getCurrentStreamPosition();
-        // Give up Audio focus
-        giveUpAudioFocus();
-        unregisterAudioNoisyReceiver();
-        // Relax all resources
-        relaxResources(true);
-    }
-
     public void setState(int state) {
         this.mState = state;
     }
@@ -170,9 +158,9 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
                     mCallback.onPlaybackStateChanged(mState);
 
                     MediaMetadataCompat.Builder metaBuilder = new MediaMetadataCompat.Builder();
-                    metaBuilder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, bundle.getString("title"));
-                    metaBuilder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, bundle.getString("artist_name"));
-                    metaBuilder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, bundle.getString("album_url"));
+                    metaBuilder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, bundle.getString(MediaMetadataCompat.METADATA_KEY_ARTIST));
+                    metaBuilder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, bundle.getString(MediaMetadataCompat.METADATA_KEY_TITLE));
+                    metaBuilder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, bundle.getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI));
                     mCallback.onMediaMetadataChanged(metaBuilder.build());
                 }
 
@@ -186,6 +174,10 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
     }
 
     public void resume() {
+        mPlayOnFocusGain = true;
+        tryToGetAudioFocus();
+        registerAudioNoisyReceiver();
+
         configMediaPlayerState();
     }
 
@@ -222,6 +214,19 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
                 mCallback.onPlaybackStateChanged(mState);
             }
         }
+    }
+
+    public void stop() {
+        mState = PlaybackStateCompat.STATE_STOPPED;
+        if (mCallback != null) {
+            mCallback.onPlaybackStateChanged(mState);
+        }
+        mCurrentPosition = getCurrentStreamPosition();
+        // Give up Audio focus
+        giveUpAudioFocus();
+        unregisterAudioNoisyReceiver();
+        // Relax all resources
+        relaxResources(true);
     }
 
     public void setCallback(Callback callback) {
@@ -485,4 +490,14 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
          */
         void onError(String error);
     }
+//
+//    private Runnable mUpdateRunnable = new Runnable() {
+//        @Override
+//        public void run() {
+//
+//            if(mMediaPlayer.isPlaying()) {
+//                postDelayed(mUpdateRunnable, 500);
+//            }
+//        }
+//    }
 }

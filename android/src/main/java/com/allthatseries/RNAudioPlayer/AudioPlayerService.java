@@ -9,7 +9,9 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.support.v4.app.NotificationManagerCompat;
@@ -21,8 +23,9 @@ import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 
-public class AudioPlayerService extends Service implements Playback.Callback {
+public class AudioPlayerService extends Service {
 
     private static final String TAG = AudioPlayerService.class.getSimpleName();
 
@@ -46,6 +49,7 @@ public class AudioPlayerService extends Service implements Playback.Callback {
     private MediaControllerCompat mMediaController;
     private MediaNotificationManager mMediaNotificationManager;
     private Playback mPlayback;
+    private final DelayedStopHandler mDelayedStopHandler = new DelayedStopHandler(this);
 
     public class ServiceBinder extends Binder {
 
@@ -60,17 +64,75 @@ public class AudioPlayerService extends Service implements Playback.Callback {
 
         @Override
         public void onPlayFromUri(Uri uri, Bundle extras) {
+            mMediaSession.setActive(true);
+            mDelayedStopHandler.removeCallbacksAndMessages(null);
+
+            // The service needs to continue running even after the bound client (usually a
+            // MediaController) disconnects, otherwise the music playback will stop.
+            // Calling startService(Intent) will keep the service running until it is explicitly killed.
+            startService(new Intent(getApplicationContext(), AudioPlayerService.class));
+
             mPlayback.playFromUri(uri, extras);
         }
 
         @Override
         public void onPlay() {
+            mMediaSession.setActive(true);
+            mDelayedStopHandler.removeCallbacksAndMessages(null);
+
+            // The service needs to continue running even after the bound client (usually a
+            // MediaController) disconnects, otherwise the music playback will stop.
+            // Calling startService(Intent) will keep the service running until it is explicitly killed.
+            startService(new Intent(getApplicationContext(), AudioPlayerService.class));
             mPlayback.resume();
         }
 
         @Override
         public void onPause() {
-            mPlayback.pause();
+            if (mPlayback.isPlaying()) {
+                mPlayback.pause();
+                mMediaSession.setActive(false);
+                // Reset the delayed stop handler, so after STOP_DELAY it will be executed again,
+                // potentially stopping the service.
+                mDelayedStopHandler.removeCallbacksAndMessages(null);
+                mDelayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
+                stopForeground(true);
+            }
+        }
+
+        @Override
+        public void onStop() {
+            mPlayback.stop();
+            mMediaSession.setActive(false);
+            // Reset the delayed stop handler, so after STOP_DELAY it will be executed again,
+            // potentially stopping the service.
+            mDelayedStopHandler.removeCallbacksAndMessages(null);
+            mDelayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
+            stopForeground(true);
+        }
+    };
+
+    private Playback.Callback mPlaybackCallback = new Playback.Callback() {
+        @Override
+        public void onCompletion() {
+            updatePlaybackState();
+            mMediaNotificationManager.startNotification();
+        }
+
+        @Override
+        public void onError(String error) {
+            mMediaNotificationManager.stopNotification();
+        }
+
+        @Override
+        public void onPlaybackStateChanged(int state) {
+            updatePlaybackState();
+        }
+
+        @Override
+        public void onMediaMetadataChanged(MediaMetadataCompat metadata) {
+            mMediaSession.setMetadata(metadata);
+            mMediaNotificationManager.startNotification();
         }
     };
 
@@ -101,6 +163,7 @@ public class AudioPlayerService extends Service implements Playback.Callback {
 
         // 2) Create a Playback instance
         mPlayback = new Playback(this);
+        mPlayback.setCallback(mPlaybackCallback);
         updatePlaybackState();
 
         // 3) Create the media controller
@@ -127,9 +190,7 @@ public class AudioPlayerService extends Service implements Playback.Callback {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-
         if (intent != null && intent.getAction() != null) {
-
             switch (intent.getAction()) {
                 case ACTION_PLAY:
                     mMediaController.getTransportControls().play();
@@ -147,27 +208,6 @@ public class AudioPlayerService extends Service implements Playback.Callback {
         }
 
         return super.onStartCommand(intent, flags, startId);
-    }
-
-    @Override
-    public void onCompletion() {
-
-    }
-
-    @Override
-    public void onError(String error) {
-
-    }
-
-    @Override
-    public void onPlaybackStateChanged(int state) {
-        updatePlaybackState();
-    }
-
-    @Override
-    public void onMediaMetadataChanged(MediaMetadataCompat metadata) {
-        mMediaSession.setMetadata(metadata);
-        mMediaNotificationManager.startNotification();
     }
 
     /**
@@ -199,5 +239,29 @@ public class AudioPlayerService extends Service implements Playback.Callback {
                 .setState(state, position, 1.0f, SystemClock.elapsedRealtime());
 
         mMediaSession.setPlaybackState(stateBuilder.build());
+    }
+
+    /**
+     * A simple handler that stops the service if playback is not active (playing)
+     */
+    private static class DelayedStopHandler extends Handler {
+        private final WeakReference<AudioPlayerService> mWeakReference;
+
+        private DelayedStopHandler(AudioPlayerService service) {
+            mWeakReference = new WeakReference<>(service);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            AudioPlayerService service = mWeakReference.get();
+            if (service != null && service.getPlayback() != null) {
+                if (service.getPlayback().isPlaying()) {
+                    Log.d(TAG, "Ignoring delayed stop since the media player is in use.");
+                    return;
+                }
+                Log.d(TAG, "Stopping service with delay handler.");
+                service.stopSelf();
+            }
+        }
     }
 }

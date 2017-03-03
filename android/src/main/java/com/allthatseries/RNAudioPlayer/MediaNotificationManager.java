@@ -283,13 +283,14 @@ public class MediaNotificationManager extends BroadcastReceiver {
                 .setStyle(new NotificationCompat.MediaStyle()
                     .setShowActionsInCompactView(new int[]{playPauseButtonPosition})  // show only play/pause in compact view
                     .setMediaSession(mSessionToken))
-//                .setColor(mNotificationColor)
+                .setColor(0xffdf533b)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setUsesChronometer(true)
 //                .setContentIntent(createContentIntent(description))
                 .setContentTitle(description.getTitle())
                 .setContentText(description.getSubtitle())
+                .setProgress(100, 50, false)
                 .setLargeIcon(art);
 
         setNotificationPlaybackState(notificationBuilder);

@@ -17,6 +17,9 @@ package com.allthatseries.RNAudioPlayer.utils;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.util.Log;
+
+import com.facebook.imagepipeline.cache.BitmapMemoryCacheFactory;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -25,7 +28,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 public class BitmapHelper {
-    private static final String TAG = LogHelper.makeLogTag(BitmapHelper.class);
+    private static final String TAG = BitmapHelper.class.getSimpleName();
 
     // Max read limit that we allow our input stream to mark/reset.
     private static final int MAX_READ_LIMIT_PER_IMG = 1024 * 1024;
@@ -70,8 +73,7 @@ public class BitmapHelper {
             is = new BufferedInputStream(urlConnection.getInputStream());
             is.mark(MAX_READ_LIMIT_PER_IMG);
             int scaleFactor = findScaleFactor(width, height, is);
-            LogHelper.d(TAG, "Scaling bitmap ", uri, " by factor ", scaleFactor, " to support ",
-                    width, "x", height, "requested dimension");
+            Log.d(TAG, "Scaling bitmap " + uri + " by factor " + scaleFactor + " to support " +  width + "x" + height +"requested dimension");
             is.reset();
             return scaleBitmap(scaleFactor, is);
         } finally {
