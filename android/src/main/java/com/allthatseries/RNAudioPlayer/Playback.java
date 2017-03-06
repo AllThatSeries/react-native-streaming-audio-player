@@ -24,7 +24,9 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.PowerManager;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.telecom.Call;
@@ -72,6 +74,7 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
     private MediaPlayer mMediaPlayer;
 
     private final IntentFilter mAudioNoisyIntentFilter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
+    private Handler mHandler = new Handler();
 
     private final BroadcastReceiver mAudioNoisyReceiver = new BroadcastReceiver() {
         @Override
@@ -424,6 +427,29 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
             mMediaPlayer.setOnCompletionListener(this);
             mMediaPlayer.setOnErrorListener(this);
             mMediaPlayer.setOnSeekCompleteListener(this);
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    while(mMediaPlayer != null) {
+                        try {
+                            Thread.sleep(500);
+                            mHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Intent intent = new Intent("update-position-event");
+                                    intent.putExtra("currentPosition", mMediaPlayer.getCurrentPosition());
+                                    LocalBroadcastManager.getInstance(mContext).sendBroadcast(intent);
+                                }
+                            });
+
+                        } catch(Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }).start();
+
         } else {
             mMediaPlayer.reset();
         }
@@ -490,14 +516,4 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
          */
         void onError(String error);
     }
-//
-//    private Runnable mUpdateRunnable = new Runnable() {
-//        @Override
-//        public void run() {
-//
-//            if(mMediaPlayer.isPlaying()) {
-//                postDelayed(mUpdateRunnable, 500);
-//            }
-//        }
-//    }
 }

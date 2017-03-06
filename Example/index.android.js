@@ -11,10 +11,35 @@ import {
   Text,
   View,
   Button,
+  DeviceEventEmitter,
 } from 'react-native';
 import Player from 'react-native-streaming-audio-player';
 
 export default class Example extends Component {
+
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      currentTime: 0,
+    }
+
+    this.onUpdatePosition = this.onUpdatePosition.bind(this);
+  }
+
+  componentDidMount() {
+    DeviceEventEmitter.addListener('onUpdatePosition', this.onUpdatePosition);
+  }
+
+  componentWillUnmount() {
+    DeviceEventEmitter.removeListener('onUpdatePosition', this.onUpdatePosition);
+  }
+
+  onUpdatePosition(event) {
+    this.setState({
+      currentTime: parseInt(event.currentPosition / 1000),  // convert milisecond to second
+    });    
+  }
 
   onPlay() {
     const uri = "https://api.soundcloud.com/tracks/284081601/stream?client_id=a6fc7f2f8f0cded1aba16e1d98cdefb2"
@@ -54,6 +79,7 @@ export default class Example extends Component {
             color='red'
           />          
         </View>
+        <Text>{this.state.currentTime}</Text>
       </View>
     );
   }

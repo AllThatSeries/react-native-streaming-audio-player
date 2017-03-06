@@ -1,14 +1,17 @@
 package com.allthatseries.RNAudioPlayer;
 
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.support.annotation.Nullable;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -38,7 +41,21 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
 
         this.reactContext = reactContext;
         this.reactContext.addLifecycleEventListener(this);
+
+        // Register receiver
+        LocalBroadcastManager.getInstance(reactContext).registerReceiver(mLocalBroadcastReceiver, new IntentFilter("update-position-event"));
     }
+
+    private BroadcastReceiver mLocalBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            int nCurrentPosition = intent.getIntExtra("currentPosition", 0);
+            WritableMap params = Arguments.createMap();
+            params.putInt("currentPosition", nCurrentPosition);
+
+            sendEvent("onUpdatePosition", params);
+        }
+    };
 
     @Override
     public String getName() {
