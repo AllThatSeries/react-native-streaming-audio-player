@@ -15,6 +15,7 @@ import android.os.Message;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.NotificationCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -110,13 +111,32 @@ public class AudioPlayerService extends Service {
             mDelayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
             stopForeground(true);
         }
+
+        @Override
+        public void onSeekTo(long pos) {
+            mPlayback.seekTo((int)pos);
+        }
+
+        @Override
+        public void onSkipToNext() {
+            Intent intent = new Intent("skip-event");
+            intent.putExtra("skip", "Next");
+            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+        }
+
+        @Override
+        public void onSkipToPrevious() {
+            Intent intent = new Intent("skip-event");
+            intent.putExtra("skip", "Prev");
+            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+        }
     };
 
     private Playback.Callback mPlaybackCallback = new Playback.Callback() {
         @Override
         public void onCompletion() {
             updatePlaybackState();
-            mMediaNotificationManager.startNotification();
+//            mMediaNotificationManager.startNotification();
         }
 
         @Override

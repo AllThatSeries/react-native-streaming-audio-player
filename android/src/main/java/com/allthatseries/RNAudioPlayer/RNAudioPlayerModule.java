@@ -43,17 +43,31 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
         this.reactContext.addLifecycleEventListener(this);
 
         // Register receiver
-        LocalBroadcastManager.getInstance(reactContext).registerReceiver(mLocalBroadcastReceiver, new IntentFilter("update-position-event"));
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("update-position-event");
+        filter.addAction("skip-event");
+        LocalBroadcastManager.getInstance(reactContext).registerReceiver(mLocalBroadcastReceiver, filter);
     }
 
     private BroadcastReceiver mLocalBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            int nCurrentPosition = intent.getIntExtra("currentPosition", 0);
             WritableMap params = Arguments.createMap();
-            params.putInt("currentPosition", nCurrentPosition);
 
-            sendEvent("onUpdatePosition", params);
+            switch(intent.getAction()) {
+                case "update-position-event":
+                    int nCurrentPosition = intent.getIntExtra("currentPosition", 0);
+                    params.putInt("currentPosition", nCurrentPosition);
+                    sendEvent("onUpdatePosition", params);
+                    break;
+                case "skip-event":
+                    String strSkip = intent.getStringExtra("skip");
+                    params.putString("skip", strSkip);
+                    sendEvent("onSkipTrack", params);
+                    break;
+                default:
+                    break;
+            }
         }
     };
 
@@ -62,8 +76,7 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
     return "RNAudioPlayer";
     }
 
-    private void sendEvent(String eventName,
-                           @Nullable WritableMap params) {
+    private void sendEvent(String eventName, @Nullable WritableMap params) {
         this.reactContext
                 .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                 .emit(eventName, params);
@@ -92,7 +105,7 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
         @Override
         public void onPlaybackStateChanged(PlaybackStateCompat state) {
             WritableMap params = Arguments.createMap();
-            params.putInt("playbackState", state.getState());
+            params.putInt("state", state.getState());
             sendEvent("onPlaybackStateChanged", params);
         }
 
@@ -144,8 +157,8 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
     public void play(String stream_url, ReadableMap metadata) {
         Bundle bundle = new Bundle();
         bundle.putString(MediaMetadataCompat.METADATA_KEY_TITLE, metadata.getString("title"));
-        bundle.putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, metadata.getString("album_url"));
-        bundle.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, metadata.getString("artist_name"));
+        bundle.putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, metadata.getString("album_art_uri"));
+        bundle.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, metadata.getString("artist"));
         mMediaController.getTransportControls().playFromUri(Uri.parse(stream_url), bundle);
     }
 

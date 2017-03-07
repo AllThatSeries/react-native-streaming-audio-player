@@ -116,14 +116,12 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
         return mMediaPlayer != null ? mMediaPlayer.getCurrentPosition() : mCurrentPosition;
     }
 
-    public int getDuration() {
-        return mMediaPlayer != null ? mMediaPlayer.getDuration() : 0;
+    public void setCurrentStreamPosition(int pos) {
+        this.mCurrentPosition = pos;
     }
 
-    public void updateLastKnownStreamPosition() {
-        if (mMediaPlayer != null) {
-            mCurrentPosition = mMediaPlayer.getCurrentPosition();
-        }
+    public int getDuration() {
+        return mMediaPlayer != null ? mMediaPlayer.getDuration() : 0;
     }
 
     public void playFromUri(Uri uri, Bundle bundle) {
@@ -141,6 +139,7 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
                 createMediaPlayerIfNeeded();
 
                 mState = PlaybackStateCompat.STATE_BUFFERING;
+                mCurrentPosition = 0;
 
                 mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
                 mMediaPlayer.setDataSource(uri.toString());
@@ -224,7 +223,7 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
         if (mCallback != null) {
             mCallback.onPlaybackStateChanged(mState);
         }
-        mCurrentPosition = getCurrentStreamPosition();
+        mCurrentPosition = 0;
         // Give up Audio focus
         giveUpAudioFocus();
         unregisterAudioNoisyReceiver();
@@ -234,10 +233,6 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
 
     public void setCallback(Callback callback) {
         this.mCallback = callback;
-    }
-
-    public void setCurrentStreamPosition(int pos) {
-        this.mCurrentPosition = pos;
     }
 
     /**
@@ -369,9 +364,8 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
     @Override
     public void onCompletion(MediaPlayer player) {
         Log.d(TAG, "onCompletion from MediaPlayer");
-        // The media player finished playing the current song, so we go ahead
-        // and start the next.
         if (mCallback != null) {
+            mState = PlaybackStateCompat.STATE_PAUSED;
             mCallback.onCompletion();
         }
     }
@@ -384,8 +378,7 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
     @Override
     public void onPrepared(MediaPlayer player) {
         Log.d(TAG, "onPrepared from MediaPlayer");
-        // The media player is done preparing. That means we can start playing if we
-        // have audio focus.
+        // The media player is done preparing. That means we can start playing if we have audio focus.
         configMediaPlayerState();
     }
 
@@ -437,9 +430,11 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
                             mHandler.post(new Runnable() {
                                 @Override
                                 public void run() {
-                                    Intent intent = new Intent("update-position-event");
-                                    intent.putExtra("currentPosition", mMediaPlayer.getCurrentPosition());
-                                    LocalBroadcastManager.getInstance(mContext).sendBroadcast(intent);
+                                    if (mMediaPlayer != null) {
+                                        Intent intent = new Intent("update-position-event");
+                                        intent.putExtra("currentPosition", mMediaPlayer.getCurrentPosition());
+                                        LocalBroadcastManager.getInstance(mContext).sendBroadcast(intent);
+                                    }
                                 }
                             });
 

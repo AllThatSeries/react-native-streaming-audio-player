@@ -23,6 +23,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.RemoteException;
 import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationManagerCompat;
@@ -74,9 +75,6 @@ public class MediaNotificationManager extends BroadcastReceiver {
     public MediaNotificationManager(AudioPlayerService service) throws RemoteException {
         mService = service;
         updateSessionToken();
-
-//        mNotificationColor = ResourceHelper.getThemeColor(mService, R.attr.colorPrimary,
-//                Color.DKGRAY);
 
         mNotificationManager = NotificationManagerCompat.from(service);
 
@@ -185,17 +183,6 @@ public class MediaNotificationManager extends BroadcastReceiver {
         }
     }
 
-//    private PendingIntent createContentIntent(MediaDescriptionCompat description) {
-//        Intent openUI = new Intent(mService, MusicPlayerActivity.class);
-//        openUI.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-//        openUI.putExtra(MusicPlayerActivity.EXTRA_START_FULLSCREEN, true);
-//        if (description != null) {
-//            openUI.putExtra(MusicPlayerActivity.EXTRA_CURRENT_MEDIA_DESCRIPTION, description);
-//        }
-//        return PendingIntent.getActivity(mService, REQUEST_CODE, openUI,
-//                PendingIntent.FLAG_CANCEL_CURRENT);
-//    }
-
     private final MediaControllerCompat.Callback mCb = new MediaControllerCompat.Callback() {
         @Override
         public void onPlaybackStateChanged(@NonNull PlaybackStateCompat state) {
@@ -245,7 +232,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
         // If skip to previous action is enabled
         if ((mPlaybackState.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS) != 0) {
-            notificationBuilder.addAction(R.drawable.ic_action_rewind, "previous", mPreviousIntent);
+            notificationBuilder.addAction(R.drawable.ic_skip_previous_white_24dp, "previous", mPreviousIntent);
 
             // If there is a "skip to previous" button, the play/pause button will
             // be the second one. We need to keep track of it, because the MediaStyle notification
@@ -258,7 +245,7 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
         // If skip to next action is enabled
         if ((mPlaybackState.getActions() & PlaybackStateCompat.ACTION_SKIP_TO_NEXT) != 0) {
-            notificationBuilder.addAction(R.drawable.ic_action_fast_forward, "next", mNextIntent);
+            notificationBuilder.addAction(R.drawable.ic_skip_next_white_24dp, "next", mNextIntent);
         }
 
         MediaDescriptionCompat description = mMetadata.getDescription();
@@ -274,8 +261,8 @@ public class MediaNotificationManager extends BroadcastReceiver {
             if (art == null) {
                 fetchArtUrl = artUrl;
                 // use a placeholder art while the remote art is being downloaded
-//                art = BitmapFactory.decodeResource(mService.getResources(),
-//                    R.drawable.ic_default_art);
+                art = BitmapFactory.decodeResource(mService.getResources(),
+                    R.drawable.ic_default_art);
             }
         }
 
@@ -287,7 +274,6 @@ public class MediaNotificationManager extends BroadcastReceiver {
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setUsesChronometer(true)
-//                .setContentIntent(createContentIntent(description))
                 .setContentTitle(description.getTitle())
                 .setContentText(description.getSubtitle())
                 .setProgress(100, 50, false)
@@ -308,11 +294,11 @@ public class MediaNotificationManager extends BroadcastReceiver {
         PendingIntent intent;
         if (mPlaybackState.getState() == PlaybackStateCompat.STATE_PLAYING) {
             label = "pause";
-            icon = R.drawable.ic_action_pause;
+            icon = R.drawable.ic_pause_white_24dp;
             intent = mPauseIntent;
         } else {
             label = "play";
-            icon = R.drawable.ic_action_play;
+            icon = R.drawable.ic_play_arrow_white_24dp;
             intent = mPlayIntent;
         }
         builder.addAction(new NotificationCompat.Action(icon, label, intent));
