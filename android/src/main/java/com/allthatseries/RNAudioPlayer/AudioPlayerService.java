@@ -116,20 +116,6 @@ public class AudioPlayerService extends Service {
         public void onSeekTo(long pos) {
             mPlayback.seekTo((int)pos);
         }
-
-        @Override
-        public void onSkipToNext() {
-            Intent intent = new Intent("skip-event");
-            intent.putExtra("skip", "Next");
-            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
-        }
-
-        @Override
-        public void onSkipToPrevious() {
-            Intent intent = new Intent("skip-event");
-            intent.putExtra("skip", "Prev");
-            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
-        }
     };
 
     private Playback.Callback mPlaybackCallback = new Playback.Callback() {
@@ -204,8 +190,10 @@ public class AudioPlayerService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mMediaSession.release();
         mMediaNotificationManager.stopNotification();
+
+        mDelayedStopHandler.removeCallbacksAndMessages(null);
+        mMediaSession.release();
     }
 
     @Override

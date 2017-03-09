@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.media.session.PlaybackState;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -27,6 +28,8 @@ import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
+import java.util.HashMap;
+
 public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements ServiceConnection, LifecycleEventListener {
 
     public static final String TAG = "RNAudioPlayer";
@@ -35,6 +38,7 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
 
     private MediaControllerCompat mMediaController;
     private AudioPlayerService mService;
+    private HashMap<Integer, String> mStateMap = new HashMap<Integer, String>();
 
     public RNAudioPlayerModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -46,7 +50,14 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
         IntentFilter filter = new IntentFilter();
         filter.addAction("update-position-event");
         filter.addAction("skip-event");
+        filter.addAction("change-playback-action-event");
         LocalBroadcastManager.getInstance(reactContext).registerReceiver(mLocalBroadcastReceiver, filter);
+
+        mStateMap.put(PlaybackStateCompat.STATE_NONE,       "NONE");
+        mStateMap.put(PlaybackStateCompat.STATE_STOPPED,    "STOPPED");
+        mStateMap.put(PlaybackStateCompat.STATE_PAUSED,     "PAUSED");
+        mStateMap.put(PlaybackStateCompat.STATE_PLAYING,    "PLAYING");
+        mStateMap.put(PlaybackStateCompat.STATE_ERROR,      "ERROR");
     }
 
     private BroadcastReceiver mLocalBroadcastReceiver = new BroadcastReceiver() {
@@ -60,11 +71,10 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
                     params.putInt("currentPosition", nCurrentPosition);
                     sendEvent("onUpdatePosition", params);
                     break;
-                case "skip-event":
-                    String strSkip = intent.getStringExtra("skip");
-                    params.putString("skip", strSkip);
-                    sendEvent("onSkipTrack", params);
-                    break;
+                case "change-playback-action-event":
+                    String strAction = intent.getStringExtra("action");
+                    params.putString("action", strAction);
+                    sendEvent("onPlaybackActionChanged", params);
                 default:
                     break;
             }
@@ -88,8 +98,8 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
 
         try {
             Intent intent = new Intent(this.reactContext, AudioPlayerService.class);
-            this.reactContext.startService(intent);
-            boolean isBound = this.reactContext.bindService(intent, this, Context.BIND_AUTO_CREATE);
+            //boolean isBound = this.reactContext.bindService(intent, this, Context.BIND_AUTO_CREATE);
+            boolean isBound = this.reactContext.bindService(intent, this, 0);
             if (isBound) {
                 Log.d(TAG, "Bound");
             } else {
@@ -104,9 +114,11 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
     private MediaControllerCompat.Callback mMediaControllerCallback = new MediaControllerCompat.Callback() {
         @Override
         public void onPlaybackStateChanged(PlaybackStateCompat state) {
-            WritableMap params = Arguments.createMap();
-            params.putInt("state", state.getState());
-            sendEvent("onPlaybackStateChanged", params);
+            if (mStateMap.containsKey(state.getState())) {
+                WritableMap params = Arguments.createMap();
+                params.putString("playbackState", mStateMap.get(state.getState()));
+                sendEvent("onPlaybackStateChanged", params);
+            }
         }
 
         @Override

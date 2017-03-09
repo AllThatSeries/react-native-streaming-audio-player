@@ -27,6 +27,7 @@ import android.graphics.BitmapFactory;
 import android.os.RemoteException;
 import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.media.MediaDescriptionCompat;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
@@ -34,6 +35,8 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
+
+import com.facebook.react.bridge.ReactApplicationContext;
 
 /**
  * Keeps track of a notification and updates it automatically for a given
@@ -142,18 +145,28 @@ public class MediaNotificationManager extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         final String action = intent.getAction();
         Log.d(TAG, "Received intent with action " + action);
+        Intent newIntent = new Intent("change-playback-action-event");
+
         switch (action) {
             case ACTION_PAUSE:
-                mTransportControls.pause();
+//                mTransportControls.pause();
+                newIntent.putExtra("action", PlaybackAction.PAUSE);
+                LocalBroadcastManager.getInstance(context).sendBroadcast(newIntent);
                 break;
             case ACTION_PLAY:
-                mTransportControls.play();
+//                mTransportControls.play();
+                newIntent.putExtra("action", PlaybackAction.PLAY);
+                LocalBroadcastManager.getInstance(context).sendBroadcast(newIntent);
                 break;
             case ACTION_NEXT:
-                mTransportControls.skipToNext();
+//                mTransportControls.skipToNext();
+                newIntent.putExtra("action", PlaybackAction.SKIP_TO_NEXT);
+                LocalBroadcastManager.getInstance(context).sendBroadcast(newIntent);
                 break;
             case ACTION_PREV:
-                mTransportControls.skipToPrevious();
+//                mTransportControls.skipToPrevious();
+                newIntent.putExtra("action", PlaybackAction.SKIP_TO_PREVIOUS);
+                LocalBroadcastManager.getInstance(context).sendBroadcast(newIntent);
                 break;
             default:
                 Log.w(TAG, "Unknown intent ignored. Action=" + action);

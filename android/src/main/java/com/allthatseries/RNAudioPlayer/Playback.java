@@ -230,6 +230,20 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
         // Relax all resources
         relaxResources(true);
     }
+//
+//    public void skipToNext() {
+//        mState = PlaybackStateCompat.STATE_SKIPPING_TO_NEXT;
+//        if (mCallback != null) {
+//            mCallback.onPlaybackStateChanged(mState);
+//        }
+//    }
+//
+//    public void skipToPrevious() {
+//        mState = PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS;
+//        if (mCallback != null) {
+//            mCallback.onPlaybackStateChanged(mState);
+//        }
+//    }
 
     public void setCallback(Callback callback) {
         this.mCallback = callback;
@@ -430,7 +444,7 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
                             mHandler.post(new Runnable() {
                                 @Override
                                 public void run() {
-                                    if (mMediaPlayer != null) {
+                                    if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
                                         Intent intent = new Intent("update-position-event");
                                         intent.putExtra("currentPosition", mMediaPlayer.getCurrentPosition());
                                         LocalBroadcastManager.getInstance(mContext).sendBroadcast(intent);
