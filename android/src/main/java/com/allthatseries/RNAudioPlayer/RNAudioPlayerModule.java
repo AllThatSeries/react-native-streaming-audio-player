@@ -49,8 +49,9 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
         // Register receiver
         IntentFilter filter = new IntentFilter();
         filter.addAction("update-position-event");
-        filter.addAction("skip-event");
         filter.addAction("change-playback-action-event");
+        filter.addAction("change-playback-state-event");
+        filter.addAction("playback-error-event");
         LocalBroadcastManager.getInstance(reactContext).registerReceiver(mLocalBroadcastReceiver, filter);
 
         mStateMap.put(PlaybackStateCompat.STATE_NONE,       "NONE");
@@ -58,6 +59,8 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
         mStateMap.put(PlaybackStateCompat.STATE_PAUSED,     "PAUSED");
         mStateMap.put(PlaybackStateCompat.STATE_PLAYING,    "PLAYING");
         mStateMap.put(PlaybackStateCompat.STATE_ERROR,      "ERROR");
+        mStateMap.put(PlaybackStateCompat.STATE_BUFFERING,  "BUFFERING");
+        mStateMap.put(12,                                   "COMPLETED");
     }
 
     private BroadcastReceiver mLocalBroadcastReceiver = new BroadcastReceiver() {
@@ -69,12 +72,24 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
                 case "update-position-event":
                     int nCurrentPosition = intent.getIntExtra("currentPosition", 0);
                     params.putInt("currentPosition", nCurrentPosition);
-                    sendEvent("onUpdatePosition", params);
+                    sendEvent("onPlaybackPositionUpdated", params);
                     break;
                 case "change-playback-action-event":
                     String strAction = intent.getStringExtra("action");
                     params.putString("action", strAction);
                     sendEvent("onPlaybackActionChanged", params);
+                    break;
+                case "change-playback-state-event":
+                    int nState = intent.getIntExtra("state", 0);
+                    if (mStateMap.containsKey(nState)) {
+                        params.putString("state", mStateMap.get(nState));
+                        sendEvent("onPlaybackStateChanged", params);
+                    }
+                    break;
+                case "playback-error-event":
+                    String strError = intent.getStringExtra("msg");
+                    params.putString("msg", strError);
+                    sendEvent("onPlaybackError", params);
                 default:
                     break;
             }
@@ -114,11 +129,7 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
     private MediaControllerCompat.Callback mMediaControllerCallback = new MediaControllerCompat.Callback() {
         @Override
         public void onPlaybackStateChanged(PlaybackStateCompat state) {
-            if (mStateMap.containsKey(state.getState())) {
-                WritableMap params = Arguments.createMap();
-                params.putString("playbackState", mStateMap.get(state.getState()));
-                sendEvent("onPlaybackStateChanged", params);
-            }
+            super.onPlaybackStateChanged(state);
         }
 
         @Override
@@ -205,7 +216,7 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
     }
 
     @ReactMethod
-    public void getCurrentStreamPosition(Callback cb) {
-        cb.invoke(mService.getPlayback().getCurrentStreamPosition());
+    public void getCurrentPosition(Callback cb) {
+        cb.invoke(mService.getPlayback().getCurrentPosition());
     }
 }

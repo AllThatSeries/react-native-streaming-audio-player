@@ -29,7 +29,6 @@ import android.os.PowerManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
-import android.telecom.Call;
 import android.util.Log;
 
 import java.io.IOException;
@@ -96,7 +95,7 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
         this.mAudioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         // Create the Wifi lock (this does not acquire the lock, this just creates it)
         this.mWifiLock = ((WifiManager) context.getSystemService(Context.WIFI_SERVICE))
-                .createWifiLock(WifiManager.WIFI_MODE_FULL, "uAmp_lock");
+                .createWifiLock(WifiManager.WIFI_MODE_FULL, "playback_lock");
         this.mState = PlaybackStateCompat.STATE_NONE;
     }
 
@@ -112,11 +111,11 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
         return mPlayOnFocusGain || (mMediaPlayer != null && mMediaPlayer.isPlaying());
     }
 
-    public int getCurrentStreamPosition() {
+    public int getCurrentPosition() {
         return mMediaPlayer != null ? mMediaPlayer.getCurrentPosition() : mCurrentPosition;
     }
 
-    public void setCurrentStreamPosition(int pos) {
+    public void setCurrentPosition(int pos) {
         this.mCurrentPosition = pos;
     }
 
@@ -129,48 +128,44 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
         tryToGetAudioFocus();
         registerAudioNoisyReceiver();
 
-        if (mState == PlaybackStateCompat.STATE_PAUSED) {
-            configMediaPlayerState();
-        } else {
-            mState = PlaybackStateCompat.STATE_STOPPED;
-            relaxResources(false); // release everything except MediaPlayer
+        mState = PlaybackStateCompat.STATE_STOPPED;
+        relaxResources(false); // release everything except MediaPlayer
 
-            try {
-                createMediaPlayerIfNeeded();
+        try {
+            createMediaPlayerIfNeeded();
 
-                mState = PlaybackStateCompat.STATE_BUFFERING;
-                mCurrentPosition = 0;
+            mState = PlaybackStateCompat.STATE_BUFFERING;
+            mCurrentPosition = 0;
 
-                mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                mMediaPlayer.setDataSource(uri.toString());
+            mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+            mMediaPlayer.setDataSource(uri.toString());
 
-                // Starts preparing the media player in the background. When
-                // it's done, it will call our OnPreparedListener (that is,
-                // the onPrepared() method on this class, since we set the
-                // listener to 'this'). Until the media player is prepared,
-                // we *cannot* call start() on it!
-                mMediaPlayer.prepareAsync();
+            // Starts preparing the media player in the background. When
+            // it's done, it will call our OnPreparedListener (that is,
+            // the onPrepared() method on this class, since we set the
+            // listener to 'this'). Until the media player is prepared,
+            // we *cannot* call start() on it!
+            mMediaPlayer.prepareAsync();
 
-                // If we are streaming from the internet, we want to hold a
-                // Wifi lock, which prevents the Wifi radio from going to
-                // sleep while the song is playing.
-                mWifiLock.acquire();
+            // If we are streaming from the internet, we want to hold a
+            // Wifi lock, which prevents the Wifi radio from going to
+            // sleep while the song is playing.
+            mWifiLock.acquire();
 
-                if (mCallback != null) {
-                    mCallback.onPlaybackStateChanged(mState);
+            if (mCallback != null) {
+                mCallback.onPlaybackStateChanged(mState);
 
-                    MediaMetadataCompat.Builder metaBuilder = new MediaMetadataCompat.Builder();
-                    metaBuilder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, bundle.getString(MediaMetadataCompat.METADATA_KEY_ARTIST));
-                    metaBuilder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, bundle.getString(MediaMetadataCompat.METADATA_KEY_TITLE));
-                    metaBuilder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, bundle.getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI));
-                    mCallback.onMediaMetadataChanged(metaBuilder.build());
-                }
+                MediaMetadataCompat.Builder metaBuilder = new MediaMetadataCompat.Builder();
+                metaBuilder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, bundle.getString(MediaMetadataCompat.METADATA_KEY_ARTIST));
+                metaBuilder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, bundle.getString(MediaMetadataCompat.METADATA_KEY_TITLE));
+                metaBuilder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, bundle.getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI));
+                mCallback.onMediaMetadataChanged(metaBuilder.build());
+            }
 
-            } catch (IOException ex) {
-                Log.e(TAG, ex +  "Exception playing song");
-                if (mCallback != null) {
-                    mCallback.onError(ex.getMessage());
-                }
+        } catch (IOException ex) {
+            Log.e(TAG, ex +  "Exception playing song");
+            if (mCallback != null) {
+                mCallback.onError(ex.getMessage());
             }
         }
     }
@@ -230,20 +225,6 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
         // Relax all resources
         relaxResources(true);
     }
-//
-//    public void skipToNext() {
-//        mState = PlaybackStateCompat.STATE_SKIPPING_TO_NEXT;
-//        if (mCallback != null) {
-//            mCallback.onPlaybackStateChanged(mState);
-//        }
-//    }
-//
-//    public void skipToPrevious() {
-//        mState = PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS;
-//        if (mCallback != null) {
-//            mCallback.onPlaybackStateChanged(mState);
-//        }
-//    }
 
     public void setCallback(Callback callback) {
         this.mCallback = callback;
@@ -409,6 +390,7 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
         if (mCallback != null) {
             mCallback.onError("MediaPlayer error " + what + " (" + extra + ")");
         }
+
         return true; // true indicates we handled the error
     }
 

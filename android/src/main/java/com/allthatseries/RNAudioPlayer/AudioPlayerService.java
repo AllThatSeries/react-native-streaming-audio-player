@@ -122,12 +122,19 @@ public class AudioPlayerService extends Service {
         @Override
         public void onCompletion() {
             updatePlaybackState();
-//            mMediaNotificationManager.startNotification();
+
+            Intent intent = new Intent("change-playback-state-event");
+            intent.putExtra("state", 12);
+            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
         }
 
         @Override
         public void onError(String error) {
             mMediaNotificationManager.stopNotification();
+
+            Intent intent = new Intent("playback-error-event");
+            intent.putExtra("msg", error);
+            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
         }
 
         @Override
@@ -226,7 +233,7 @@ public class AudioPlayerService extends Service {
 
         long position = PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN;
         if (mPlayback != null ) {
-            position = mPlayback.getCurrentStreamPosition();
+            position = mPlayback.getCurrentPosition();
         }
         long actions =
                 PlaybackStateCompat.ACTION_PLAY_PAUSE |
@@ -247,6 +254,11 @@ public class AudioPlayerService extends Service {
                 .setState(state, position, 1.0f, SystemClock.elapsedRealtime());
 
         mMediaSession.setPlaybackState(stateBuilder.build());
+
+
+        Intent intent = new Intent("change-playback-state-event");
+        intent.putExtra("state", state);
+        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
     }
 
     /**

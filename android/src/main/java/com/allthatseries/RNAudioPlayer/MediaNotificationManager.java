@@ -69,10 +69,6 @@ public class MediaNotificationManager extends BroadcastReceiver {
     private final PendingIntent mPreviousIntent;
     private final PendingIntent mNextIntent;
 
-//    private final PendingIntent mStopCastIntent;
-
-//    private final int mNotificationColor;
-
     private boolean mStarted = false;
 
     public MediaNotificationManager(AudioPlayerService service) throws RemoteException {
@@ -149,22 +145,18 @@ public class MediaNotificationManager extends BroadcastReceiver {
 
         switch (action) {
             case ACTION_PAUSE:
-//                mTransportControls.pause();
                 newIntent.putExtra("action", PlaybackAction.PAUSE);
                 LocalBroadcastManager.getInstance(context).sendBroadcast(newIntent);
                 break;
             case ACTION_PLAY:
-//                mTransportControls.play();
                 newIntent.putExtra("action", PlaybackAction.PLAY);
                 LocalBroadcastManager.getInstance(context).sendBroadcast(newIntent);
                 break;
             case ACTION_NEXT:
-//                mTransportControls.skipToNext();
                 newIntent.putExtra("action", PlaybackAction.SKIP_TO_NEXT);
                 LocalBroadcastManager.getInstance(context).sendBroadcast(newIntent);
                 break;
             case ACTION_PREV:
-//                mTransportControls.skipToPrevious();
                 newIntent.putExtra("action", PlaybackAction.SKIP_TO_PREVIOUS);
                 LocalBroadcastManager.getInstance(context).sendBroadcast(newIntent);
                 break;
@@ -289,7 +281,6 @@ public class MediaNotificationManager extends BroadcastReceiver {
                 .setUsesChronometer(true)
                 .setContentTitle(description.getTitle())
                 .setContentText(description.getSubtitle())
-                .setProgress(100, 50, false)
                 .setLargeIcon(art);
 
         setNotificationPlaybackState(notificationBuilder);
