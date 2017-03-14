@@ -192,6 +192,7 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
         if (mCallback != null) {
             mCallback.onPlaybackStateChanged(mState);
         }
+
         unregisterAudioNoisyReceiver();
     }
 

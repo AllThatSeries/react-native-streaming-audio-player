@@ -1,30 +1,21 @@
 package com.allthatseries.RNAudioPlayer;
 
-import android.app.PendingIntent;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
-import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
 import android.os.RemoteException;
 import android.os.SystemClock;
-import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.NotificationCompat;
+import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
-
-import java.io.IOException;
-import java.lang.ref.WeakReference;
+import android.view.KeyEvent;
 
 public class AudioPlayerService extends Service {
 
@@ -38,22 +29,13 @@ public class AudioPlayerService extends Service {
     public static final String CMD_NAME = "CMD_NAME";
     // A value of a CMD_NAME key in the extras of the incoming Intent that indicates that the music playback should be paused
     public static final String CMD_PAUSE = "CMD_PAUSE";
-    // Delay stopSelf by using a handler.
-    private static final int STOP_DELAY = 30000;
-
-    public static final String ACTION_PLAY = "play";
-    public static final String ACTION_PAUSE = "pause";
-    public static final String ACTION_FAST_FORWARD = "fastForward";
-    public static final String ACTION_REWIND = "rewind";
 
     private MediaSessionCompat mMediaSession;
     private MediaControllerCompat mMediaController;
     private MediaNotificationManager mMediaNotificationManager;
     private Playback mPlayback;
-    private final DelayedStopHandler mDelayedStopHandler = new DelayedStopHandler(this);
 
     public class ServiceBinder extends Binder {
-
         public AudioPlayerService getService() {
             return AudioPlayerService.this;
         }
@@ -66,25 +48,12 @@ public class AudioPlayerService extends Service {
         @Override
         public void onPlayFromUri(Uri uri, Bundle extras) {
             mMediaSession.setActive(true);
-            mDelayedStopHandler.removeCallbacksAndMessages(null);
-
-            // The service needs to continue running even after the bound client (usually a
-            // MediaController) disconnects, otherwise the music playback will stop.
-            // Calling startService(Intent) will keep the service running until it is explicitly killed.
-            startService(new Intent(getApplicationContext(), AudioPlayerService.class));
-
             mPlayback.playFromUri(uri, extras);
         }
 
         @Override
         public void onPlay() {
             mMediaSession.setActive(true);
-            mDelayedStopHandler.removeCallbacksAndMessages(null);
-
-            // The service needs to continue running even after the bound client (usually a
-            // MediaController) disconnects, otherwise the music playback will stop.
-            // Calling startService(Intent) will keep the service running until it is explicitly killed.
-            startService(new Intent(getApplicationContext(), AudioPlayerService.class));
             mPlayback.resume();
         }
 
@@ -92,23 +61,21 @@ public class AudioPlayerService extends Service {
         public void onPause() {
             if (mPlayback.isPlaying()) {
                 mPlayback.pause();
-                mMediaSession.setActive(false);
-                // Reset the delayed stop handler, so after STOP_DELAY it will be executed again,
-                // potentially stopping the service.
-                mDelayedStopHandler.removeCallbacksAndMessages(null);
-                mDelayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
                 stopForeground(true);
             }
+        }
+
+        @Override
+        public boolean onMediaButtonEvent(Intent mediaButtonEvent) {
+            KeyEvent keyEvent = mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
+            Log.d(TAG, "onMediaButtonEvent in MediaSessionCallback called with event: " + keyEvent);
+            return super.onMediaButtonEvent(mediaButtonEvent);
         }
 
         @Override
         public void onStop() {
             mPlayback.stop();
             mMediaSession.setActive(false);
-            // Reset the delayed stop handler, so after STOP_DELAY it will be executed again,
-            // potentially stopping the service.
-            mDelayedStopHandler.removeCallbacksAndMessages(null);
-            mDelayedStopHandler.sendEmptyMessageDelayed(0, STOP_DELAY);
             stopForeground(true);
         }
 
@@ -169,7 +136,6 @@ public class AudioPlayerService extends Service {
         // 1) set up media session and media session callback
         mMediaSession = new MediaSessionCompat(this, SESSION_TAG);
         mMediaSession.setCallback(mMediaSessionCallback);
-        mMediaSession.setActive(true);
         mMediaSession.setFlags(
                 MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS |
                 MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
@@ -196,33 +162,28 @@ public class AudioPlayerService extends Service {
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
+        Log.d(TAG, "onDestroy");
+        mMediaController.getTransportControls().stop();
         mMediaNotificationManager.stopNotification();
-
-        mDelayedStopHandler.removeCallbacksAndMessages(null);
         mMediaSession.release();
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null && intent.getAction() != null) {
-            switch (intent.getAction()) {
-                case ACTION_PLAY:
-                    mMediaController.getTransportControls().play();
-                    break;
-                case ACTION_FAST_FORWARD:
-                    mMediaController.getTransportControls().fastForward();
-                    break;
-                case ACTION_REWIND:
-                    mMediaController.getTransportControls().rewind();
-                    break;
-                case ACTION_PAUSE:
+    public int onStartCommand(Intent startIntent, int flags, int startId) {
+        if (startIntent != null) {
+            String action = startIntent.getAction();
+            String command = startIntent.getStringExtra(CMD_NAME);
+            if (ACTION_CMD.equals(action)) {
+                if (CMD_PAUSE.equals(command)) {
                     mMediaController.getTransportControls().pause();
-                    break;
+                }
+            } else {
+                // Try to handle the intent as a media button event wrapped by MediaButtonReceiver
+                MediaButtonReceiver.handleIntent(mMediaSession, startIntent);
             }
         }
 
-        return super.onStartCommand(intent, flags, startId);
+        return START_STICKY;
     }
 
     /**
@@ -255,33 +216,8 @@ public class AudioPlayerService extends Service {
 
         mMediaSession.setPlaybackState(stateBuilder.build());
 
-
         Intent intent = new Intent("change-playback-state-event");
         intent.putExtra("state", state);
         LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
-    }
-
-    /**
-     * A simple handler that stops the service if playback is not active (playing)
-     */
-    private static class DelayedStopHandler extends Handler {
-        private final WeakReference<AudioPlayerService> mWeakReference;
-
-        private DelayedStopHandler(AudioPlayerService service) {
-            mWeakReference = new WeakReference<>(service);
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            AudioPlayerService service = mWeakReference.get();
-            if (service != null && service.getPlayback() != null) {
-                if (service.getPlayback().isPlaying()) {
-                    Log.d(TAG, "Ignoring delayed stop since the media player is in use.");
-                    return;
-                }
-                Log.d(TAG, "Stopping service with delay handler.");
-                service.stopSelf();
-            }
-        }
     }
 }

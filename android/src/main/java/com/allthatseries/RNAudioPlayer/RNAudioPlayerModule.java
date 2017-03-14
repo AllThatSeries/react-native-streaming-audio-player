@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.media.session.PlaybackState;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -126,18 +125,6 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
         }
     }
 
-    private MediaControllerCompat.Callback mMediaControllerCallback = new MediaControllerCompat.Callback() {
-        @Override
-        public void onPlaybackStateChanged(PlaybackStateCompat state) {
-            super.onPlaybackStateChanged(state);
-        }
-
-        @Override
-        public void onMetadataChanged(MediaMetadataCompat metadata) {
-            super.onMetadataChanged(metadata);
-        }
-    };
-
     @Override
     public void onServiceConnected(ComponentName name, IBinder service) {
         if (service instanceof AudioPlayerService.ServiceBinder) {
@@ -145,7 +132,6 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
                 mService = ((AudioPlayerService.ServiceBinder) service).getService();
                 mMediaController = new MediaControllerCompat(this.reactContext,
                         ((AudioPlayerService.ServiceBinder) service).getService().getMediaSessionToken());
-                mMediaController.registerCallback(mMediaControllerCallback);
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
