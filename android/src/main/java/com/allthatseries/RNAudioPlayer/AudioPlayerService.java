@@ -61,7 +61,7 @@ public class AudioPlayerService extends Service {
         public void onPause() {
             if (mPlayback.isPlaying()) {
                 mPlayback.pause();
-                stopForeground(true);
+                stopForeground(false);
             }
         }
 
