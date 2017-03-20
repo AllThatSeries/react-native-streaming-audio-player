@@ -271,12 +271,19 @@ public class MediaNotificationManager extends BroadcastReceiver {
             }
         }
 
+        // Basically we use notification icon but it doesn't exist we use launcher icon
+        Context context = mService.getApplicationContext();
+        int resId = context.getResources().getIdentifier("ic_notification", "drawable", context.getPackageName());
+        if (resId == 0){
+            resId = context.getResources().getIdentifier("ic_launcher", "mipmap", context.getPackageName());;
+        }
+
         notificationBuilder
                 .setStyle(new NotificationCompat.MediaStyle()
                     .setShowActionsInCompactView(new int[]{playPauseButtonPosition})  // show only play/pause in compact view
                     .setMediaSession(mSessionToken))
                 .setColor(0xffdf533b)
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setSmallIcon(resId)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setUsesChronometer(true)
                 .setContentTitle(description.getTitle())
