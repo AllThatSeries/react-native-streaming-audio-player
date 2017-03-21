@@ -291,6 +291,20 @@ public class MediaNotificationManager extends BroadcastReceiver {
                 .setLargeIcon(art);
 
         setNotificationPlaybackState(notificationBuilder);
+
+        // We should get MainActivity.class to set pendingIntent
+        // If there exists better way, it should place this logic
+        String packageName = mService.getApplicationContext().getPackageName();
+        Intent launchIntent = mService.getApplicationContext().getPackageManager().getLaunchIntentForPackage(packageName);
+        String className = launchIntent.getComponent().getClassName();
+
+        try {
+            Class activityClass = Class.forName(className);
+            notificationBuilder.setContentIntent(createContentIntent(activityClass));
+        } catch(Exception e) {
+            // do nothing
+        }
+
         if (fetchArtUrl != null) {
             fetchBitmapFromURLAsync(fetchArtUrl, notificationBuilder);
         }
