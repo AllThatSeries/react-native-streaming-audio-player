@@ -9,7 +9,6 @@
 
 @interface RNAudioPlayer() {
     float duration;
-    float trackDuration;
     NSString *rapName;
     NSString *songTitle;
     NSString *albumUrlStr;
