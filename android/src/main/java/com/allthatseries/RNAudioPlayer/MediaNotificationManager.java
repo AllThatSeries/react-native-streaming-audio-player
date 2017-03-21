@@ -226,6 +226,12 @@ public class MediaNotificationManager extends BroadcastReceiver {
         }
     };
 
+    private PendingIntent createContentIntent(Class activityClass) {
+        Intent openUI = new Intent(mService, activityClass);
+        openUI.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        return PendingIntent.getActivity(mService, REQUEST_CODE, openUI, PendingIntent.FLAG_CANCEL_CURRENT);
+    }
+
     private Notification createNotification() {
         Log.d(TAG, "updateNotificationMetadata. mMetadata= " + mMetadata);
         if (mMetadata == null || mPlaybackState == null) {
