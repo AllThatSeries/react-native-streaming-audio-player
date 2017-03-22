@@ -130,7 +130,6 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
 
     @Override
     public void onServiceDisconnected(ComponentName name) {
-
     }
 
 
@@ -144,6 +143,7 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
 
     @Override
     public void onHostDestroy() {
+        mMediaController.getTransportControls().stop();
     }
 
     @ReactMethod
