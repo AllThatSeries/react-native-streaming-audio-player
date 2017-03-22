@@ -30,9 +30,6 @@ import com.facebook.react.modules.core.DeviceEventManagerModule;
 import java.util.HashMap;
 
 public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements ServiceConnection, LifecycleEventListener {
-
-    public static final String TAG = "RNAudioPlayer";
-
     ReactApplicationContext reactContext;
 
     private MediaControllerCompat mMediaController;
@@ -112,14 +109,7 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
 
         try {
             Intent intent = new Intent(this.reactContext, AudioPlayerService.class);
-            //boolean isBound = this.reactContext.bindService(intent, this, Context.BIND_AUTO_CREATE);
-            boolean isBound = this.reactContext.bindService(intent, this, 0);
-            if (isBound) {
-                Log.d(TAG, "Bound");
-            } else {
-                Log.d(TAG, "Not Bound");
-            }
-
+            this.reactContext.bindService(intent, this, Context.BIND_AUTO_CREATE);
         } catch (Exception e) {
             Log.e("ERROR", e.getMessage());
         }
@@ -146,20 +136,14 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
 
     @Override
     public void onHostResume() {
-        Log.d(TAG, "onHostResume");
-
     }
 
     @Override
     public void onHostPause() {
-        Log.d(TAG, "onHostPause");
-
     }
 
     @Override
     public void onHostDestroy() {
-        Log.d(TAG, "onHostDestroy");
-
     }
 
     @ReactMethod

@@ -14,8 +14,6 @@ import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
-import android.util.Log;
-import android.view.KeyEvent;
 
 public class AudioPlayerService extends Service {
 
@@ -63,13 +61,6 @@ public class AudioPlayerService extends Service {
                 mPlayback.pause();
                 stopForeground(false);
             }
-        }
-
-        @Override
-        public boolean onMediaButtonEvent(Intent mediaButtonEvent) {
-            KeyEvent keyEvent = mediaButtonEvent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
-            Log.d(TAG, "onMediaButtonEvent in MediaSessionCallback called with event: " + keyEvent);
-            return super.onMediaButtonEvent(mediaButtonEvent);
         }
 
         @Override
@@ -162,7 +153,6 @@ public class AudioPlayerService extends Service {
 
     @Override
     public void onDestroy() {
-        Log.d(TAG, "onDestroy");
         mMediaController.getTransportControls().stop();
         mMediaNotificationManager.stopNotification();
         mMediaSession.release();
@@ -190,8 +180,6 @@ public class AudioPlayerService extends Service {
      * Update the current media player state, optionally showing an error message.
      */
     public void updatePlaybackState() {
-        Log.d(TAG, "updatePlaybackState, playback state=" + mPlayback.getState());
-
         long position = PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN;
         if (mPlayback != null ) {
             position = mPlayback.getCurrentPosition();
@@ -201,7 +189,7 @@ public class AudioPlayerService extends Service {
                 PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS |
                 PlaybackStateCompat.ACTION_SKIP_TO_NEXT;
 
-        if (mPlayback.isPlaying()) {
+        if (mPlayback != null && mPlayback.isPlaying()) {
             actions |= PlaybackStateCompat.ACTION_PAUSE;
         } else {
             actions |= PlaybackStateCompat.ACTION_PLAY;

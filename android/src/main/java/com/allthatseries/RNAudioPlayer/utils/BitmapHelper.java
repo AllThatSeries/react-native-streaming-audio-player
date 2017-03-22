@@ -17,9 +17,6 @@ package com.allthatseries.RNAudioPlayer.utils;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.util.Log;
-
-import com.facebook.imagepipeline.cache.BitmapMemoryCacheFactory;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -73,7 +70,6 @@ public class BitmapHelper {
             is = new BufferedInputStream(urlConnection.getInputStream());
             is.mark(MAX_READ_LIMIT_PER_IMG);
             int scaleFactor = findScaleFactor(width, height, is);
-            Log.d(TAG, "Scaling bitmap " + uri + " by factor " + scaleFactor + " to support " +  width + "x" + height +"requested dimension");
             is.reset();
             return scaleBitmap(scaleFactor, is);
         } finally {

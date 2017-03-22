@@ -20,10 +20,9 @@ import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.util.LruCache;
+import java.io.IOException;
 
 import com.allthatseries.RNAudioPlayer.utils.BitmapHelper;
-
-import java.io.IOException;
 
 /**
  * Implements a basic cache of album arts, with async loading support.
@@ -84,11 +83,9 @@ public final class AlbumArtCache {
         // a proper image loading library, like Glide.
         Bitmap[] bitmap = mCache.get(artUrl);
         if (bitmap != null) {
-            Log.d(TAG, "getOrFetch: album art is in cache, using it" + artUrl);
             listener.onFetched(artUrl, bitmap[BIG_BITMAP_INDEX], bitmap[ICON_BITMAP_INDEX]);
             return;
         }
-        Log.d(TAG, "getOrFetch: starting asynctask to fetch " + artUrl);
 
         new AsyncTask<Void, Void, Bitmap[]>() {
             @Override
@@ -104,7 +101,7 @@ public final class AlbumArtCache {
                 } catch (IOException e) {
                     return null;
                 }
-                Log.d(TAG, "doInBackground: putting bitmap in cache. cache size=" + mCache.size());
+
                 return bitmaps;
             }
 
