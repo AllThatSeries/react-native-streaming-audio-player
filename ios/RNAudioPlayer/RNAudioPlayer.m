@@ -9,6 +9,7 @@
 
 @interface RNAudioPlayer() {
     float duration;
+    float trackDuration;
     NSString *rapName;
     NSString *songTitle;
     NSString *albumUrlStr;
@@ -57,7 +58,7 @@ RCT_EXPORT_METHOD(play:(NSString *)url:(NSDictionary *) metadata) {
     if(!([url length]>0)) return;
     
     // if audio is playing, stop the audio first
-    if (self.player.rate) {
+    if (self.player.rate && duration != 0) {
         [self.player pause];
         CMTime newTime = CMTimeMakeWithSeconds(0, 1);
         [self.player seekToTime:newTime];
@@ -69,6 +70,7 @@ RCT_EXPORT_METHOD(play:(NSString *)url:(NSDictionary *) metadata) {
         [self.playerItem removeObserver:self forKeyPath:@"playbackLikelyToKeepUp"];
     } @catch (id exception){
         // do nothing if there were no observers attached
+        NSLog(@"no observers were attached");
     }
     
     // metadata to be used in lock screen & control center display
@@ -79,6 +81,7 @@ RCT_EXPORT_METHOD(play:(NSString *)url:(NSDictionary *) metadata) {
     
     // updating lock screen & control center
     [self setNowPlayingInfo:true];
+    NSLog(@"setNowPlayingInfo sent? %@", songTitle);
     
     NSURL *soundUrl = [[NSURL alloc] initWithString:url];
     self.playerItem = [AVPlayerItem playerItemWithURL:soundUrl];
@@ -97,6 +100,7 @@ RCT_EXPORT_METHOD(pause) {
 }
 
 RCT_EXPORT_METHOD(resume) {
+    NSLog(@"resume?!?!?");
     [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
                                                     body: @{@"state": @"PLAYING" }];
     [self playAudio];
@@ -140,16 +144,17 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
 
 -(void) pauseOrStop:(NSString *)value {
     [self.player pause];
-    [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
-                                                    body: @{@"state": @"PAUSED" }];
     
     if ([value isEqualToString:@"STOP"]) {
+        [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
+                                                        body: @{@"state": @"STOPPED" }];
         CMTime newTime = CMTimeMakeWithSeconds(0, 1);
         [self.player seekToTime:newTime];
-        [self.playerItem removeObserver:self forKeyPath:@"status"];
-        [self.playerItem removeObserver:self forKeyPath:@"playbackLikelyToKeepUp"];
+        duration = 0;
         albumArt = nil;
     } else {
+        [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
+                                                        body: @{@"state": @"PAUSED" }];
         songInfo = @{
                      MPMediaItemPropertyTitle: rapName,
                      MPMediaItemPropertyArtist: songTitle,
@@ -170,6 +175,7 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
     } @catch (id exception){
         // do nothing if playbackTimeObserver doesn't exist
     }
+    
 }
 
 - (NSTimeInterval)currentPlaybackTime {
@@ -285,7 +291,7 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
     switch (interuptionType)
     {
         case AVAudioSessionInterruptionTypeBegan:
-            // if audio was playing
+            // if duration exists & audio was playing
             if (duration != 0 && self.player.rate) {
                 [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackActionChanged"
                                                                 body: @{@"action": @"PAUSE" }];
@@ -293,7 +299,7 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
             break;
             
         case AVAudioSessionInterruptionTypeEnded:
-            // if audio was paused
+            // if duration exists & audio was paused
             if (duration != 0 && !self.player.rate) {
                 [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
                                                                 body: @{@"state": @"PLAYING" }];
@@ -330,40 +336,54 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
     [commandCenter.previousTrackCommand addTarget:self action:@selector(didReceivePreviousTrackCommand:)];
     commandCenter.playCommand.enabled = YES;
     commandCenter.pauseCommand.enabled = YES;
+    
     commandCenter.nextTrackCommand.enabled = YES;
     commandCenter.previousTrackCommand.enabled = YES;
     commandCenter.stopCommand.enabled = NO;
 }
 
 - (void)didReceivePlayCommand:(MPRemoteCommand *)event {
-    [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackActionChanged"
-                                                    body: @{@"action": @"PLAY" }];
+    // check if player is not nil & duration is not 0 (0 means player is not initialized or stopped)
+    if (self.player && duration != 0) {
+        [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackActionChanged"
+                                                        body: @{@"action": @"PLAY" }];
+    }
+    
 }
 
 - (void)didReceivePauseCommand:(MPRemoteCommand *)event {
-    [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackActionChanged"
-                                                    body: @{@"action": @"PAUSE" }];
+    // check if player is not nil & duration is not 0 (0 means player is not initialized or stopped)
+    if (self.player && duration != 0) {
+        [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackActionChanged"
+                                                        body: @{@"action": @"PAUSE" }];
+    }
 }
 
 - (void)didReceiveToggleCommand:(MPRemoteCommand *)event {
-    // if audio is playing
-    if (self.player.rate == 1.0f) {
+    // if duration exists 0 & audio is playing
+    if (duration != 0 && self.player.rate) {
         [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackActionChanged"
                                                         body: @{@"action": @"PAUSE" }];
-    } else {
+    } else if (duration != 0 && !self.player.rate) {
         [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackActionChanged"
                                                         body: @{@"action": @"PLAY" }];
     }
 }
 
 - (void)didReceiveNextTrackCommand:(MPRemoteCommand *)event {
-    [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackActionChanged"
-                                                    body: @{@"action": @"SKIP_TO_NEXT" }];
+    // if duration exists
+    if (duration != 0) {
+        [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackActionChanged"
+                                                        body: @{@"action": @"SKIP_TO_NEXT" }];
+    }
 }
 
 - (void)didReceivePreviousTrackCommand:(MPRemoteCommand *)event {
-    [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackActionChanged"
-                                                    body: @{@"action": @"SKIP_TO_PREVIOUS" }];
+    // if duration exists
+    if (duration != 0) {
+        [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackActionChanged"
+                                                        body: @{@"action": @"SKIP_TO_PREVIOUS" }];
+    }
 }
 
 - (void)unregisterRemoteControlEvents {
