@@ -70,7 +70,6 @@ RCT_EXPORT_METHOD(play:(NSString *)url:(NSDictionary *) metadata) {
         [self.playerItem removeObserver:self forKeyPath:@"playbackLikelyToKeepUp"];
     } @catch (id exception){
         // do nothing if there were no observers attached
-        NSLog(@"no observers were attached");
     }
     
     // metadata to be used in lock screen & control center display
@@ -81,7 +80,6 @@ RCT_EXPORT_METHOD(play:(NSString *)url:(NSDictionary *) metadata) {
     
     // updating lock screen & control center
     [self setNowPlayingInfo:true];
-    NSLog(@"setNowPlayingInfo sent? %@", songTitle);
     
     NSURL *soundUrl = [[NSURL alloc] initWithString:url];
     self.playerItem = [AVPlayerItem playerItemWithURL:soundUrl];
@@ -100,7 +98,6 @@ RCT_EXPORT_METHOD(pause) {
 }
 
 RCT_EXPORT_METHOD(resume) {
-    NSLog(@"resume?!?!?");
     [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
                                                     body: @{@"state": @"PLAYING" }];
     [self playAudio];
@@ -371,19 +368,13 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
 }
 
 - (void)didReceiveNextTrackCommand:(MPRemoteCommand *)event {
-    // if duration exists
-    if (duration != 0) {
-        [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackActionChanged"
-                                                        body: @{@"action": @"SKIP_TO_NEXT" }];
-    }
+    [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackActionChanged"
+                                                    body: @{@"action": @"SKIP_TO_NEXT" }];
 }
 
 - (void)didReceivePreviousTrackCommand:(MPRemoteCommand *)event {
-    // if duration exists
-    if (duration != 0) {
-        [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackActionChanged"
-                                                        body: @{@"action": @"SKIP_TO_PREVIOUS" }];
-    }
+    [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackActionChanged"
+                                                    body: @{@"action": @"SKIP_TO_PREVIOUS" }];
 }
 
 - (void)unregisterRemoteControlEvents {
