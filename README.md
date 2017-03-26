@@ -27,8 +27,8 @@ Second, link the native dependencies.
 react-native link react-native-streaming-audio-player
 ```
 
-# Example
-
+# Running a sample app
+In the Example directory:
 ```
 cd Examples
 npm install
@@ -86,6 +86,33 @@ const styles = StyleSheet.create({
   },
 });
 ```
+
+# API and Configuration
+Player Control
+- play(url: string, metadata: object)
+  - metadata.title
+  - metadata.artist
+  - metadata.album_art_uri
+- pause()
+- stop()
+
+Callbacks
+- onPlaybackStateChanged
+- onUpdatePosition
+
+PlaybackState
+- NONE
+- PLAYING
+- BUFFERING
+- PAUSED
+- STOPPED
+- COMPLETED
+
+PlayerAction
+- Play
+- Pause
+- SkipToNext
+- SkipToPrevious
 
 # Roadmap
 - [ ] Unit tests
