@@ -1,7 +1,6 @@
-# react-native-streaming-audio-player
-Streaming audio player for iOS + Android
+# react-native-streaming-audio-player [![npm version](https://badge.fury.io/js/react-native-streaming-audio-player.svg)](https://badge.fury.io/js/react-native-streaming-audio-player)
 
-[![npm version](https://badge.fury.io/js/react-native-streaming-audio-player.svg)](https://badge.fury.io/js/react-native-streaming-audio-player)
+Streaming audio player for iOS + Android
 
 # Features
 
