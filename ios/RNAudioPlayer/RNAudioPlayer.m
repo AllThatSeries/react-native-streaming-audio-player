@@ -84,7 +84,11 @@ RCT_EXPORT_METHOD(play:(NSString *)url:(NSDictionary *) metadata) {
     NSURL *soundUrl = [[NSURL alloc] initWithString:url];
     self.playerItem = [AVPlayerItem playerItemWithURL:soundUrl];
     self.player = [AVPlayer playerWithPlayerItem:self.playerItem];
-    self.player.automaticallyWaitsToMinimizeStalling = false;
+    
+    // checking if iOS 10 or newer
+    if ([[UIDevice currentDevice].systemVersion floatValue] >= 10) {
+        self.player.automaticallyWaitsToMinimizeStalling = false;
+    }
     
     // adding observers to check if audio is ready to play or it has an issue
     [self.playerItem addObserver:self forKeyPath:@"status" options:0 context:nil];
