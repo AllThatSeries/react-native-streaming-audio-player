@@ -10,6 +10,7 @@
 @interface RNAudioPlayer() {
     float duration;
     float trackDuration;
+    bool stalled;
     NSString *rapName;
     NSString *songTitle;
     NSString *albumUrlStr;
@@ -70,6 +71,7 @@ RCT_EXPORT_METHOD(play:(NSString *)url:(NSDictionary *) metadata) {
         [self.playerItem removeObserver:self forKeyPath:@"playbackLikelyToKeepUp"];
     } @catch (id exception){
         // do nothing if there were no observers attached
+        NSLog(@"No observer to remove");
     }
     
     // metadata to be used in lock screen & control center display
@@ -102,8 +104,6 @@ RCT_EXPORT_METHOD(pause) {
 }
 
 RCT_EXPORT_METHOD(resume) {
-    [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
-                                                    body: @{@"state": @"PLAYING" }];
     [self playAudio];
 }
 
@@ -121,9 +121,18 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
 -(void) playAudio {
     [self.player play];
     
+    // send player state PLAYING to js
+    [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
+                                                    body: @{@"state": @"PLAYING" }];
+    // if play was stalled
+    if (stalled) {
+        stalled = false;
+    }
+    
     // we need a weak self here for in-block access
     __weak typeof(self) weakSelf = self;
     
+    // add playbackTimeObserver to send current position to js every 1 second
     playbackTimeObserver =
     [self.player addPeriodicTimeObserverForInterval:CMTimeMakeWithSeconds(1.0, NSEC_PER_SEC) queue:dispatch_get_main_queue() usingBlock:^(CMTime time) {
         
@@ -147,6 +156,7 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
     [self.player pause];
     
     if ([value isEqualToString:@"STOP"]) {
+        // send player state STOPPED to js
         [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
                                                         body: @{@"state": @"STOPPED" }];
         CMTime newTime = CMTimeMakeWithSeconds(0, 1);
@@ -154,6 +164,7 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
         duration = 0;
         albumArt = nil;
     } else {
+        // send player state PAUSED to js
         [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
                                                         body: @{@"state": @"PAUSED" }];
         songInfo = @{
@@ -196,15 +207,11 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
                                                             body: @{@"state": @"STOPPED" }];
         } else if (self.player.currentItem.status == AVPlayerItemStatusReadyToPlay) {
             duration = CMTimeGetSeconds(self.player.currentItem.duration);
-            [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
-                                                            body: @{@"state": @"PLAYING" }];
             [self playAudio];
         }
     } else if (object == self.player.currentItem && [keyPath isEqualToString:@"playbackLikelyToKeepUp"]) {
         // check if player has paused && player has begun playing
-        if (!self.player.rate && CMTIME_COMPARE_INLINE(self.player.currentItem.currentTime, >, kCMTimeZero)) {
-            [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
-                                                            body: @{@"state": @"PLAYING" }];
+        if (stalled && !self.player.rate && CMTIME_COMPARE_INLINE(self.player.currentItem.currentTime, >, kCMTimeZero)) {
             [self playAudio];
         }
     }
@@ -220,8 +227,9 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
 }
 
 -(void)playStalled:(NSNotification *)notification {
-    [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackActionChanged"
-                                                    body: @{@"action": @"PAUSE" }];
+    stalled = true;
+    [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
+                                                    body: @{@"state": @"PAUSED" }];
 }
 
 -(void)activate {
