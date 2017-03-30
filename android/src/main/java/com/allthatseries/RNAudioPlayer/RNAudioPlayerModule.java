@@ -109,6 +109,7 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
 
         try {
             Intent intent = new Intent(this.reactContext, AudioPlayerService.class);
+            this.reactContext.startService(intent);
             this.reactContext.bindService(intent, this, Context.BIND_AUTO_CREATE);
         } catch (Exception e) {
             Log.e("ERROR", e.getMessage());
@@ -123,7 +124,7 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
                 mMediaController = new MediaControllerCompat(this.reactContext,
                         ((AudioPlayerService.ServiceBinder) service).getService().getMediaSessionToken());
             } catch (RemoteException e) {
-                e.printStackTrace();
+                Log.e("ERROR", e.getMessage());
             }
         }
     }
@@ -144,6 +145,7 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
     @Override
     public void onHostDestroy() {
         mMediaController.getTransportControls().stop();
+        this.reactContext.stopService(new Intent(this.reactContext, AudioPlayerService.class));
     }
 
     @ReactMethod
