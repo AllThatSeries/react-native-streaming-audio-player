@@ -205,7 +205,8 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
         if (self.player.currentItem.status == AVPlayerItemStatusFailed) {
             [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
                                                             body: @{@"state": @"STOPPED" }];
-        } else if (self.player.currentItem.status == AVPlayerItemStatusReadyToPlay) {
+        } else if (self.player.currentItem.status == AVPlayerItemStatusReadyToPlay
+                   && CMTIME_COMPARE_INLINE(self.player.currentItem.currentTime, ==, kCMTimeZero)) {
             duration = CMTimeGetSeconds(self.player.currentItem.duration);
             [self playAudio];
         }
@@ -300,16 +301,16 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
     switch (interuptionType)
     {
         case AVAudioSessionInterruptionTypeBegan:
-            // if duration exists & audio was playing
-            if (duration != 0 && self.player.rate) {
-                [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackActionChanged"
-                                                                body: @{@"action": @"PAUSE" }];
+            // if duration exists
+            if (duration != 0) {
+                [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
+                                                                body: @{@"state": @"PAUSED" }];
             }
             break;
             
         case AVAudioSessionInterruptionTypeEnded:
-            // if duration exists & audio was paused
-            if (duration != 0 && !self.player.rate) {
+            // if duration exists
+            if (duration != 0 && interuptionType == AVAudioSessionInterruptionOptionShouldResume) {
                 [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
                                                                 body: @{@"state": @"PLAYING" }];
                 [self playAudio];
