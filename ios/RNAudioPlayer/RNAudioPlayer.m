@@ -202,13 +202,17 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
                         change:(NSDictionary *)change context:(void *)context {
     
     if (object == self.player.currentItem && [keyPath isEqualToString:@"status"]) {
-        if (self.player.currentItem.status == AVPlayerItemStatusFailed) {
-            [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
-                                                            body: @{@"state": @"STOPPED" }];
-        } else if (self.player.currentItem.status == AVPlayerItemStatusReadyToPlay
-                   && CMTIME_COMPARE_INLINE(self.player.currentItem.currentTime, ==, kCMTimeZero)) {
+        // if current item status is ready to play && player has not begun playing
+        if (self.player.currentItem.status == AVPlayerItemStatusReadyToPlay
+            && CMTIME_COMPARE_INLINE(self.player.currentItem.currentTime, ==, kCMTimeZero)) {
+            
+            // set duration to be displayed in control center
             duration = CMTimeGetSeconds(self.player.currentItem.duration);
             [self playAudio];
+            
+        } else if (self.player.currentItem.status == AVPlayerItemStatusFailed) {
+            [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
+                                                            body: @{@"state": @"STOPPED" }];
         }
     } else if (object == self.player.currentItem && [keyPath isEqualToString:@"playbackLikelyToKeepUp"]) {
         // check if player has paused && player has begun playing
@@ -291,14 +295,10 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
 
 - (void)onAudioInterruption:(NSNotification *)notification
 {
-    // Get the user info dictionary
-    NSDictionary *interruptionDict = notification.userInfo;
+    // getting interruption type as int value from AVAudioSessionInterruptionTypeKey
+    int interruptionType = [notification.userInfo[AVAudioSessionInterruptionTypeKey] intValue];
     
-    // Get the AVAudioSessionInterruptionTypeKey enum from the dictionary
-    NSInteger interuptionType = [[interruptionDict valueForKey:AVAudioSessionInterruptionTypeKey] integerValue];
-    
-    // Decide what to do based on interruption type
-    switch (interuptionType)
+    switch (interruptionType)
     {
         case AVAudioSessionInterruptionTypeBegan:
             // if duration exists
@@ -309,11 +309,10 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
             break;
             
         case AVAudioSessionInterruptionTypeEnded:
-            // if duration exists
-            if (duration != 0 && interuptionType == AVAudioSessionInterruptionOptionShouldResume) {
-                [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
-                                                                body: @{@"state": @"PLAYING" }];
-                [self playAudio];
+            // if duration exists && AVAudioSessionInterruptionOptionShouldResume (phone call)
+            if (duration != 0 && [notification.userInfo[AVAudioSessionInterruptionOptionKey] intValue] == AVAudioSessionInterruptionOptionShouldResume) {
+                [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackActionChanged"
+                                                                body: @{@"action": @"PLAY" }];
             }
             break;
             
