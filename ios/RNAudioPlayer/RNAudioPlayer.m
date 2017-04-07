@@ -211,8 +211,13 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
             [self playAudio];
             
         } else if (self.player.currentItem.status == AVPlayerItemStatusFailed) {
-            [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
-                                                            body: @{@"state": @"STOPPED" }];
+            if (self.player.currentItem.error) {
+                [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackError"
+                                                                body: @{@"desc": self.player.currentItem.error.localizedDescription }];
+            } else {
+                [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackError"
+                                                                body: @{@"desc": @"" }];
+            }
         }
     } else if (object == self.player.currentItem && [keyPath isEqualToString:@"playbackLikelyToKeepUp"]) {
         // check if player has paused && player has begun playing
