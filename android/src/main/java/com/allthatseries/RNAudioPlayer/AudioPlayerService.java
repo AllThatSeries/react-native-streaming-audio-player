@@ -152,18 +152,6 @@ public class AudioPlayerService extends Service {
     }
 
     @Override
-    public void onDestroy() {
-        mMediaNotificationManager.stopNotification();
-        mMediaSession.release();
-    }
-
-    @Override
-    public void onTaskRemoved(Intent rootIntent) {
-        stopSelf();
-        super.onTaskRemoved(rootIntent);
-    }
-
-    @Override
     public int onStartCommand(Intent startIntent, int flags, int startId) {
         if (startIntent != null) {
             String action = startIntent.getAction();
