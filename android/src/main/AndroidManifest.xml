@@ -8,6 +8,7 @@
         android:allowBackup="true">
         <service
             android:name=".AudioPlayerService"
+            android:stopWithTask="false"
             android:enabled="true"
             android:exported="false" />
     </application>

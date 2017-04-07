@@ -153,9 +153,14 @@ public class AudioPlayerService extends Service {
 
     @Override
     public void onDestroy() {
-        mMediaController.getTransportControls().stop();
         mMediaNotificationManager.stopNotification();
         mMediaSession.release();
+    }
+
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        stopSelf();
+        super.onTaskRemoved(rootIntent);
     }
 
     @Override

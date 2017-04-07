@@ -110,7 +110,7 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
         try {
             Intent intent = new Intent(this.reactContext, AudioPlayerService.class);
             this.reactContext.startService(intent);
-            this.reactContext.bindService(intent, this, Context.BIND_AUTO_CREATE);
+            this.reactContext.bindService(intent, this, Context.BIND_ADJUST_WITH_ACTIVITY);
         } catch (Exception e) {
             Log.e("ERROR", e.getMessage());
         }
@@ -136,15 +136,17 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
 
     @Override
     public void onHostResume() {
+        Log.d("MODULE", "onHostResume");
     }
 
     @Override
     public void onHostPause() {
+        Log.d("MODULE", "onHostPause");
     }
 
     @Override
     public void onHostDestroy() {
-        mMediaController.getTransportControls().stop();
+        Log.d("MODULE", "onHostDestroy");
         this.reactContext.stopService(new Intent(this.reactContext, AudioPlayerService.class));
     }
 
