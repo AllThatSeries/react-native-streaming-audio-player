@@ -29,7 +29,7 @@ import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import java.util.HashMap;
 
-public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements ServiceConnection, LifecycleEventListener {
+public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements ServiceConnection {
     ReactApplicationContext reactContext;
 
     private MediaControllerCompat mMediaController;
@@ -40,7 +40,6 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
         super(reactContext);
 
         this.reactContext = reactContext;
-        this.reactContext.addLifecycleEventListener(this);
 
         // Register receiver
         IntentFilter filter = new IntentFilter();
@@ -110,7 +109,7 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
         try {
             Intent intent = new Intent(this.reactContext, AudioPlayerService.class);
             this.reactContext.startService(intent);
-            this.reactContext.bindService(intent, this, Context.BIND_AUTO_CREATE);
+            this.reactContext.bindService(intent, this, Context.BIND_ADJUST_WITH_ACTIVITY);
         } catch (Exception e) {
             Log.e("ERROR", e.getMessage());
         }
@@ -131,21 +130,6 @@ public class RNAudioPlayerModule extends ReactContextBaseJavaModule implements S
 
     @Override
     public void onServiceDisconnected(ComponentName name) {
-    }
-
-
-    @Override
-    public void onHostResume() {
-    }
-
-    @Override
-    public void onHostPause() {
-    }
-
-    @Override
-    public void onHostDestroy() {
-        mMediaController.getTransportControls().stop();
-        this.reactContext.stopService(new Intent(this.reactContext, AudioPlayerService.class));
     }
 
     @ReactMethod

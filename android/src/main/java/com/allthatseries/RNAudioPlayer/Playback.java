@@ -98,6 +98,8 @@ public class Playback implements AudioManager.OnAudioFocusChangeListener,
         this.mState = PlaybackStateCompat.STATE_NONE;
     }
 
+
+
     public void setState(int state) {
         this.mState = state;
     }
