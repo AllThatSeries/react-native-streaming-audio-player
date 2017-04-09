@@ -210,13 +210,13 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
         } else if (self.player.currentItem.status == AVPlayerItemStatusFailed) {
             if (self.player.currentItem.error) {
                 [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackError"
-                                                                body: @{@"msg": self.player.currentItem.error.localizedDescription }];
+                                                                body: @{@"desc": self.player.currentItem.error.localizedDescription }];
             } else {
                 [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackError"
-                                                                body: @{@"msg": @"" }];
+                                                                body: @{@"desc": @"" }];
             }
         }
-    } else if (object == self.player.currentItem && [keyPath isEqualToString:@"playbackLikely신ToKeepUp"]) {
+    } else if (object == self.player.currentItem && [keyPath isEqualToString:@"playbackLikelyToKeepUp"]) {
         // check if player has paused && player has begun playing
         if (stalled && !self.player.rate && CMTIME_COMPARE_INLINE(self.player.currentItem.currentTime, >, kCMTimeZero)) {
             [self playAudio];
