@@ -19,7 +19,6 @@
     MPNowPlayingInfoCenter *center;
     NSDictionary *songInfo;
     MPMediaItemArtwork *albumArt;
-    MPMediaItemArtwork *defaultAlbumArt;
 }
 
 @end
@@ -36,7 +35,7 @@ RCT_EXPORT_MODULE();
         [self registerRemoteControlEvents];
         [self registerAudioInterruptionNotifications];
         UIImage *defaultArtwork = [UIImage imageNamed:@"default_artwork-t300x300"];
-        defaultAlbumArt = [[MPMediaItemArtwork alloc] initWithImage: defaultArtwork];
+        albumArt = [[MPMediaItemArtwork alloc] initWithImage: defaultArtwork];
         center = [MPNowPlayingInfoCenter defaultCenter];
         NSLog(@"AudioPlayer initialized!");
     }
@@ -50,7 +49,6 @@ RCT_EXPORT_MODULE();
     [self unregisterRemoteControlEvents];
     [self unregisterAudioInterruptionNotifications];
     [self deactivate];
-    defaultAlbumArt = nil;
 }
 
 #pragma mark - Pubic API
@@ -144,7 +142,7 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
                      MPNowPlayingInfoPropertyPlaybackRate: [NSNumber numberWithFloat: 1.0f],
                      MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithFloat:duration],
                      MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithDouble:self.currentPlaybackTime],
-                     MPMediaItemPropertyArtwork: albumArt ? albumArt : defaultAlbumArt
+                     MPMediaItemPropertyArtwork: albumArt
                      };
         center.nowPlayingInfo = songInfo;
     }];
@@ -162,7 +160,6 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
         CMTime newTime = CMTimeMakeWithSeconds(0, 1);
         [self.player seekToTime:newTime];
         duration = 0;
-        albumArt = nil;
     } else {
         // send player state PAUSED to js
         [self.bridge.eventDispatcher sendDeviceEventWithName: @"onPlaybackStateChanged"
@@ -173,7 +170,7 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
                      MPNowPlayingInfoPropertyPlaybackRate: [NSNumber numberWithFloat: 0.0],
                      MPMediaItemPropertyPlaybackDuration: [NSNumber numberWithFloat:duration],
                      MPNowPlayingInfoPropertyElapsedPlaybackTime: [NSNumber numberWithDouble:self.currentPlaybackTime],
-                     MPMediaItemPropertyArtwork: albumArt ? albumArt : defaultAlbumArt
+                     MPMediaItemPropertyArtwork: albumArt
                      };
         center.nowPlayingInfo = songInfo;
     }
@@ -404,13 +401,18 @@ RCT_EXPORT_METHOD(seekTo:(int) nSecond) {
 }
 
 - (void)setNowPlayingInfo:(bool)isPlaying {
-    UIImage *artWork = [UIImage imageWithData:[NSData dataWithContentsOfURL:albumUrl]];
-    albumArt = [[MPMediaItemArtwork alloc] initWithImage: artWork];
+    NSData *data = [NSData dataWithContentsOfURL:albumUrl];
+    
+    if (data) {
+        UIImage *artWork = [UIImage imageWithData:data];
+        albumArt = [[MPMediaItemArtwork alloc] initWithImage: artWork];
+    }
+    
     songInfo = @{
                  MPMediaItemPropertyTitle: rapName,
                  MPMediaItemPropertyArtist: songTitle,
                  MPNowPlayingInfoPropertyPlaybackRate: [NSNumber numberWithFloat:isPlaying ? 1.0f : 0.0],
-                 MPMediaItemPropertyArtwork: albumArt ? albumArt : defaultAlbumArt
+                 MPMediaItemPropertyArtwork: albumArt
                  };
     center.nowPlayingInfo = songInfo;
 }
