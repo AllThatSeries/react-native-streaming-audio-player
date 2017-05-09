@@ -17,7 +17,7 @@ Streaming audio player for iOS + Android
 First, install the library from npm:
 
 ```
-npm install react-native-maps --save
+npm install react-native-streaming-audio-player --save
 ```
 
 Second, link the native dependencies.
