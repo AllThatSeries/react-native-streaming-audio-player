@@ -18,11 +18,7 @@
     "streaming",
     "player"
   ],
-  "peerDependencies": {
-    "react": ">=15.4.0",
-    "react-native": ">=0.40"
-  },
-  "devDependencies": {
+ "devDependencies": {
     "babel-eslint": "^7.1.1",
     "eslint": "^3.17.1",
     "eslint-config-airbnb": "^14.1.0",
